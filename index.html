@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=portrait">
+    <title>JusticeThrower - 正义投掷者</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+        
+        body {
+            background-color: #000;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        /* 竖屏强制 */
+        @media screen and (orientation: landscape) {
+            body::after {
+                content: '请旋转手机至竖屏模式';
+                position: fixed;
+                inset: 0;
+                background-color: #000;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                z-index: 100;
+            }
+        }
+        
+        .game-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            padding: 20px;
+        }
+        
+        .game-card {
+            background-color: white;
+            border-radius: 16px;
+            padding: 32px 24px;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.15s;
+        }
+        
+        .btn-primary {
+            background-color: #3B82F6;
+            color: white;
+            box-shadow: 0 4px 0 0 #2563EB;
+        }
+        
+        .btn-primary:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 0 #2563EB;
+        }
+        
+        .btn-secondary {
+            background-color: #F59E0B;
+            color: white;
+            box-shadow: 0 4px 0 0 #D97706;
+        }
+        
+        .btn-secondary:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 0 #D97706;
+        }
+        
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+        
+        #game-ui {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: none;
+        }
+        
+        .ui-panel {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        #throws-left {
+            top: 20px;
+            left: 20px;
+        }
+        
+        #score {
+            top: 20px;
+            right: 20px;
+        }
+        
+        #targets-left {
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 28px;
+            height: 28px;
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 40;
+            display: none;
+        }
+        
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .crosshair::before {
+            width: 2px;
+            height: 10px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .crosshair::after {
+            width: 10px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .throw-hint {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #1F2937;
+        }
+        
+        h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #1F2937;
+        }
+        
+        .subtitle {
+            color: #6B7280;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        
+        .description {
+            color: #374151;
+            margin-bottom: 32px;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 游戏画布 -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- 准星 -->
+    <div id="crosshair" class="crosshair"></div>
+
+    <!-- 游戏UI -->
+    <div id="game-ui">
+        <div id="throws-left" class="ui-panel">剩余: 10</div>
+        <div id="score" class="ui-panel">得分: 0</div>
+        <div id="targets-left" class="ui-panel">目标: 2</div>
+        <div class="throw-hint">点击屏幕任意位置投掷</div>
+    </div>
+
+    <!-- 开始菜单 -->
+    <div id="start-menu" class="game-overlay">
+        <div class="game-card">
+            <h1>🎯 JusticeThrower</h1>
+            <p class="subtitle">正义投掷者</p>
+            <p class="description">
+                你站在地铁车厢顶部视角<br>
+                用投掷物惩罚那些作恶的人！<br><br>
+                🔴 红色 = 施暴者（击中+100分）<br>
+                🟢 绿色 = 受害者（击中-50分）
+            </p>
+            <button id="start-game" class="btn btn-primary">开始游戏</button>
+        </div>
+    </div>
+
+    <!-- 游戏结束菜单 -->
+    <div id="game-over-menu" class="game-overlay hidden">
+        <div class="game-card">
+            <h2 id="game-result">游戏结束</h2>
+            <p id="game-message" class="description">再接再厉！</p>
+            <p style="font-size: 18px; margin-bottom: 32px;">
+                最终得分: <span id="final-score" style="font-weight: bold; font-size: 24px;">0</span>
+            </p>
+            <button id="restart-game" class="btn btn-primary">再来一局</button>
+            <button id="back-to-menu" class="btn btn-secondary">返回菜单</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏配置
+        const CONFIG = {
+            MAX_THROWS: 10,
+            TARGET_PERPETRATORS: 2,
+            PLAYER_HEIGHT: 2.5, // 大幅调高至2.5米，靠近车厢顶
+            CAR_HEIGHT: 2.8,
+            CAR_LENGTH: 18,
+            CAR_WIDTH: 3.2
+        };
+
+        // 全局变量（只有开始游戏后才会初始化）
+        let game = null;
+
+        // 页面加载完成后只绑定按钮事件
+        window.addEventListener('load', () => {
+            document.getElementById('start-game').addEventListener('click', startGame);
+            document.getElementById('restart-game').addEventListener('click', startGame);
+            document.getElementById('back-to-menu').addEventListener('click', backToMenu);
+        });
+
+        // 返回菜单
+        function backToMenu() {
+            if (game) {
+                game.destroy();
+                game = null;
+            }
+            
+            document.getElementById('start-menu').classList.remove('hidden');
+            document.getElementById('game-over-menu').classList.add('hidden');
+            document.getElementById('game-ui').classList.add('hidden');
+            document.getElementById('crosshair').classList.add('hidden');
+            document.getElementById('game-canvas').style.display = 'none';
+        }
+
+        // 开始游戏（只有点击按钮后才会执行所有游戏逻辑）
+        function startGame() {
+            if (game) {
+                game.destroy();
+            }
+            
+            game = new Game();
+            game.start();
+        }
+
+        // 游戏主类
+        class Game {
+            constructor() {
+                this.state = {
+                    started: false,
+                    over: false,
+                    throwsLeft: CONFIG.MAX_THROWS,
+                    score: 0,
+                    targetsLeft: CONFIG.TARGET_PERPETRATORS
+                };
+                
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.npcs = [];
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+                this.animationId = null;
+            }
+            
+            start() {
+                this.state.started = true;
+                
+                // 初始化3D场景
+                this.initScene();
+                // 创建地铁车厢
+                this.createSubwayCar();
+                // 创建NPC
+                this.createNPCs();
+                // 绑定点击事件
+                this.bindEvents();
+                // 更新UI
+                this.updateUI();
+                
+                // 显示游戏界面
+                document.getElementById('start-menu').classList.add('hidden');
+                document.getElementById('game-over-menu').classList.add('hidden');
+                document.getElementById('game-ui').style.display = 'block';
+                document.getElementById('crosshair').classList.remove('hidden');
+                document.getElementById('game-canvas').style.display = 'block';
+                
+                // 开始渲染循环
+                this.render();
+            }
+            
+            destroy() {
+                this.state.started = false;
+                this.state.over = true;
+                
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                
+                if (this.renderer) {
+                    this.renderer.dispose();
+                }
+                
+                document.getElementById('game-canvas').removeEventListener('click', this.handleClick);
+            }
+            
+            initScene() {
+                // 场景
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x1a1a2e);
+                
+                // 相机（竖屏适配 + 2.5米高视角）
+                this.camera = new THREE.PerspectiveCamera(
+                    75,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    100
+                );
+                this.camera.position.set(0, CONFIG.PLAYER_HEIGHT, CONFIG.CAR_LENGTH / 2 - 1);
+                this.camera.lookAt(0, CONFIG.PLAYER_HEIGHT - 0.3, -CONFIG.CAR_LENGTH / 2);
+                
+                // 渲染器
+                const canvas = document.getElementById('game-canvas');
+                this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = true;
+                
+                // 光照
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                this.scene.add(ambientLight);
+                
+                // 地铁荧光灯
+                for (let i = -6; i <= 6; i += 3) {
+                    const light = new THREE.PointLight(0xffffff, 0.8, 8);
+                    light.position.set(0, CONFIG.CAR_HEIGHT - 0.2, i);
+                    light.castShadow = true;
+                    this.scene.add(light);
+                }
+                
+                // 窗口大小变化
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            }
+            
+            createSubwayCar() {
+                const { CAR_LENGTH, CAR_WIDTH, CAR_HEIGHT } = CONFIG;
+                
+                // 地板
+                const floorGeo = new THREE.PlaneGeometry(CAR_WIDTH, CAR_LENGTH);
+                const floorMat = new THREE.MeshStandardMaterial({ color: 0x2d3436 });
+                const floor = new THREE.Mesh(floorGeo, floorMat);
+                floor.rotation.x = -Math.PI / 2;
+                floor.receiveShadow = true;
+                this.scene.add(floor);
+                
+                // 左墙
+                const wallGeo = new THREE.PlaneGeometry(CAR_LENGTH, CAR_HEIGHT);
+                const wallMat = new THREE.MeshStandardMaterial({ color: 0x636e72, side: THREE.DoubleSide });
+                const leftWall = new THREE.Mesh(wallGeo, wallMat);
+                leftWall.position.set(-CAR_WIDTH/2, CAR_HEIGHT/2, 0);
+                leftWall.rotation.y = Math.PI / 2;
+                leftWall.receiveShadow = true;
+                this.scene.add(leftWall);
+                
+                // 右墙
+                const rightWall = new THREE.Mesh(wallGeo, wallMat);
+                rightWall.position.set(CAR_WIDTH/2, CAR_HEIGHT/2, 0);
+                rightWall.rotation.y = -Math.PI / 2;
+                rightWall.receiveShadow = true;
+                this.scene.add(rightWall);
+                
+                // 前墙
+                const frontWallGeo = new THREE.PlaneGeometry(CAR_WIDTH, CAR_HEIGHT);
+                const frontWall = new THREE.Mesh(frontWallGeo, wallMat);
+                frontWall.position.set(0, CAR_HEIGHT/2, -CAR_LENGTH/2);
+                frontWall.receiveShadow = true;
+                this.scene.add(frontWall);
+                
+                // 天花板
+                const ceilingGeo = new THREE.PlaneGeometry(CAR_WIDTH, CAR_LENGTH);
+                const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
+                const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);
+                ceiling.position.set(0, CAR_HEIGHT, 0);
+                ceiling.rotation.x = Math.PI / 2;
+                ceiling.receiveShadow = true;
+                this.scene.add(ceiling);
+                
+                // 座椅
+                const seatGeo = new THREE.BoxGeometry(0.4, 0.7, 1.2);
+                const seatMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+                
+                // 左侧座椅
+                for (let i = -6; i <= 4; i += 2.5) {
+                    const seat = new THREE.Mesh(seatGeo, seatMat);
+                    seat.position.set(-1.3, 0.35, i);
+                    seat.castShadow = true;
+                    seat.receiveShadow = true;
+                    this.scene.add(seat);
+                }
+                
+                // 右侧座椅
+                for (let i = -6; i <= 4; i += 2.5) {
+                    const seat = new THREE.Mesh(seatGeo, seatMat);
+                    seat.position.set(1.3, 0.35, i);
+                    seat.castShadow = true;
+                    seat.receiveShadow = true;
+                    this.scene.add(seat);
+                }
+            }
+            
+            createNPCs() {
+                // 受害者（绿色）
+                this.createNPC(-1.0, -2, 0x10B981, 'victim');
+                this.createNPC(1.0, 0, 0x10B981, 'victim');
+                this.createNPC(0, -5, 0x10B981, 'victim');
+                
+                // 施暴者（红色）
+                this.createNPC(-0.6, -3, 0xEF4444, 'perpetrator');
+                this.createNPC(0.6, -6, 0xEF4444, 'perpetrator');
+            }
+            
+            createNPC(x, z, color, type) {
+                const height = 1.8;
+                const radius = 0.3;
+                
+                // 身体
+                const bodyGeo = new THREE.CapsuleGeometry(radius, height - 2*radius, 4, 8);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: color });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.set(x, height/2, z);
+                body.castShadow = true;
+                body.receiveShadow = true;
+                this.scene.add(body);
+                
+                this.npcs.push({
+                    mesh: body,
+                    type: type,
+                    alive: true,
+                    position: new THREE.Vector3(x, height/2, z)
+                });
+            }
+            
+            bindEvents() {
+                this.handleClick = (e) => {
+                    if (!this.state.started || this.state.over || this.state.throwsLeft <= 0) return;
+                    
+                    // 计算鼠标位置
+                    this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                    this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                    
+                    // 射线检测
+                    this.raycaster.setFromCamera(this.mouse, this.camera);
+                    
+                    // 检查是否击中NPC
+                    const intersects = this.raycaster.intersectObjects(this.npcs.filter(n => n.alive).map(n => n.mesh));
+                    
+                    if (intersects.length > 0) {
+                        const hitMesh = intersects[0].object;
+                        const hitNPC = this.npcs.find(n => n.mesh === hitMesh);
+                        
+                        if (hitNPC) {
+                            hitNPC.alive = false;
+                            this.scene.remove(hitNPC.mesh);
+                            
+                            if (hitNPC.type === 'perpetrator') {
+                                this.state.score += 100;
+                                this.state.targetsLeft--;
+                            } else {
+                                this.state.score -= 50;
+                            }
+                        }
+                    }
+                    
+                    // 减少投掷次数
+                    this.state.throwsLeft--;
+                    this.updateUI();
+                    
+                    // 检查游戏结束
+                    this.checkGameOver();
+                };
+                
+                document.getElementById('game-canvas').addEventListener('click', this.handleClick);
+            }
+            
+            render() {
+                if (!this.state.started || this.state.over) return;
+                
+                this.animationId = requestAnimationFrame(() => this.render());
+                this.renderer.render(this.scene, this.camera);
+            }
+            
+            checkGameOver() {
+                if (!this.state.started || this.state.over) return;
+                
+                // 胜利
+                if (this.state.targetsLeft <= 0) {
+                    this.gameOver(true);
+                    return;
+                }
+                
+                // 失败
+                if (this.state.throwsLeft <= 0) {
+                    this.gameOver(false);
+                }
+            }
+            
+            gameOver(isWin) {
+                this.state.over = true;
+                this.state.started = false;
+                
+                const result = document.getElementById('game-result');
+                const message = document.getElementById('game-message');
+                const finalScore = document.getElementById('final-score');
+                
+                if (isWin) {
+                    result.textContent = '🎉 正义必胜！';
+                    message.textContent = '你成功惩罚了所有施暴者！';
+                } else {
+                    result.textContent = '游戏结束';
+                    message.textContent = '投掷次数用完了，下次一定可以！';
+                }
+                
+                finalScore.textContent = this.state.score;
+                
+                // 显示结束菜单
+                document.getElementById('game-over-menu').classList.remove('hidden');
+                document.getElementById('game-ui').style.display = 'none';
+                document.getElementById('crosshair').classList.add('hidden');
+            }
+            
+            updateUI() {
+                document.getElementById('throws-left').textContent = `剩余: ${this.state.throwsLeft}`;
+                document.getElementById('score').textContent = `得分: ${this.state.score}`;
+                document.getElementById('targets-left').textContent = `目标: ${this.state.targetsLeft}`;
+            }
+        }
+    </script>
+</body>
+</html>
