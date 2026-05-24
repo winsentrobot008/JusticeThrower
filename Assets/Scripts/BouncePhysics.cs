@@ -131,6 +131,16 @@ public class BouncePhysics : MonoBehaviour
             reaction.OnHit();
         }
 
+        // Notify LevelManager
+        LevelManager lm = LevelManager.Instance;
+        if (lm != null)
+        {
+            if (npc.CompareTag("NaughtyNPC"))
+                lm.OnNaughtyHit(npc);
+            else if (npc.CompareTag("VictimNPC"))
+                lm.OnVictimHit(npc);
+        }
+
         // Destroy projectile after brief delay
         Destroy(gameObject, 0.5f);
     }

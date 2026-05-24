@@ -2,12 +2,15 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Manages UI for Stage 2:
+/// Manages UI for Stage 3:
 /// - Crosshair (simple十字)
 /// - Cooldown bar (Image fill)
 /// - Item name display
 /// - Active skill display
+/// - Victim hit count
 /// - Level complete panel
+/// - Game over panel
+/// - Hit feedback (screen flash handled by HitFeedbackManager)
 /// </summary>
 public class UIManager : MonoBehaviour
 {
@@ -25,19 +28,33 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Text itemNameText;
     [SerializeField] private Text skillNameText;
 
+    [Header("Victim Hit Count")]
+    [SerializeField] private Text victimHitText;
+    [SerializeField] private Color victimHitNormalColor = Color.white;
+    [SerializeField] private Color victimHitWarningColor = Color.yellow;
+    [SerializeField] private Color victimHitDangerColor = Color.red;
+
     [Header("Level Complete")]
     [SerializeField] private GameObject levelCompletePanel;
     [SerializeField] private Text levelCompleteText;
 
+    [Header("Game Over")]
+    [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private Text gameOverText;
+
     private PlayerThrow playerThrow;
+    private LevelManager levelManager;
     private Canvas canvas;
 
     private void Awake()
     {
         playerThrow = FindObjectOfType<PlayerThrow>();
+        levelManager = FindObjectOfType<LevelManager>();
 
         if (levelCompletePanel != null)
             levelCompletePanel.SetActive(false);
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(false);
     }
 
     private void Start()
@@ -69,7 +86,9 @@ public class UIManager : MonoBehaviour
         CreateCrosshairUI();
         CreateCooldownBar();
         CreateItemInfoText();
+        CreateVictimHitText();
         CreateLevelCompletePanel();
+        CreateGameOverPanel();
     }
 
     private void CreateCrosshairUI()
@@ -170,6 +189,26 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    private void CreateVictimHitText()
+    {
+        if (victimHitText == null)
+        {
+            GameObject victimGO = new GameObject("VictimHitText");
+            victimGO.transform.SetParent(canvas.transform, false);
+            victimHitText = victimGO.AddComponent<Text>();
+            victimHitText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            victimHitText.fontSize = 14;
+            victimHitText.alignment = TextAnchor.UpperRight;
+            victimHitText.color = victimHitNormalColor;
+            victimHitText.text = "Innocents Hit: 0 / 3";
+            RectTransform victimRect = victimGO.GetComponent<RectTransform>();
+            victimRect.anchorMin = new Vector2(1, 1);
+            victimRect.anchorMax = new Vector2(1, 1);
+            victimRect.sizeDelta = new Vector2(160, 30);
+            victimRect.anchoredPosition = new Vector2(-10, -10);
+        }
+    }
+
     private void CreateLevelCompletePanel()
     {
         if (levelCompletePanel != null) return;
@@ -199,6 +238,37 @@ public class UIManager : MonoBehaviour
         textRect.sizeDelta = Vector2.zero;
 
         levelCompletePanel.SetActive(false);
+    }
+
+    private void CreateGameOverPanel()
+    {
+        if (gameOverPanel != null) return;
+
+        gameOverPanel = new GameObject("GameOverPanel");
+        gameOverPanel.transform.SetParent(canvas.transform, false);
+        RectTransform panelRect = gameOverPanel.AddComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRect.sizeDelta = new Vector2(300, 100);
+        panelRect.anchoredPosition = Vector2.zero;
+
+        Image panelImage = gameOverPanel.AddComponent<Image>();
+        panelImage.color = new Color(0, 0, 0, 0.7f);
+
+        GameObject textGO = new GameObject("Text");
+        textGO.transform.SetParent(gameOverPanel.transform, false);
+        gameOverText = textGO.AddComponent<Text>();
+        gameOverText.text = "Game Over!";
+        gameOverText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        gameOverText.fontSize = 24;
+        gameOverText.alignment = TextAnchor.MiddleCenter;
+        gameOverText.color = Color.red;
+        RectTransform textRect = textGO.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.sizeDelta = Vector2.zero;
+
+        gameOverPanel.SetActive(false);
     }
 
     private void UpdateCooldownBar()
@@ -241,11 +311,38 @@ public class UIManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Update victim hit count display.
+    /// </summary>
+    public void UpdateVictimHitCount(int count, int max)
+    {
+        if (victimHitText == null) return;
+
+        victimHitText.text = $"Innocents Hit: {count} / {max}";
+
+        // Color based on severity
+        if (count >= max)
+            victimHitText.color = victimHitDangerColor;
+        else if (count >= max - 1)
+            victimHitText.color = victimHitWarningColor;
+        else
+            victimHitText.color = victimHitNormalColor;
+    }
+
+    /// <summary>
     /// Show level complete UI.
     /// </summary>
     public void ShowLevelComplete()
     {
         if (levelCompletePanel != null)
             levelCompletePanel.SetActive(true);
+    }
+
+    /// <summary>
+    /// Show game over UI.
+    /// </summary>
+    public void ShowGameOver()
+    {
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(true);
     }
 }

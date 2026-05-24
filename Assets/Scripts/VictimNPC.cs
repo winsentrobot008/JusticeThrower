@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Victim NPC - innocent person. Hitting them is bad!
-/// On hit: flashes red and scales down briefly.
+/// On hit: flashes red, scales down, plays hit reaction animation.
 /// </summary>
 public class VictimNPC : MonoBehaviour, INPCHitReaction
 {
@@ -14,6 +14,7 @@ public class VictimNPC : MonoBehaviour, INPCHitReaction
     private Renderer npcRenderer;
     private Color originalColor;
     private Vector3 originalScale;
+    private NPCAnimationController animController;
 
     private void Awake()
     {
@@ -26,6 +27,11 @@ public class VictimNPC : MonoBehaviour, INPCHitReaction
         // Auto-tag
         if (!gameObject.CompareTag("VictimNPC"))
             gameObject.tag = "VictimNPC";
+
+        // Get animation controller
+        animController = GetComponent<NPCAnimationController>();
+        if (animController == null)
+            animController = gameObject.AddComponent<NPCAnimationController>();
     }
 
     public void OnHit()
@@ -33,6 +39,19 @@ public class VictimNPC : MonoBehaviour, INPCHitReaction
         Debug.Log("VictimNPC hit! (Innocent - BAD!)");
         StopAllCoroutines();
         StartCoroutine(HitFeedbackCoroutine());
+
+        // Play hit reaction animation
+        if (animController != null)
+        {
+            // Assume hit from forward direction
+            animController.PlayHitReaction(transform.forward);
+        }
+
+        // Trigger hit feedback
+        if (HitFeedbackManager.Instance != null)
+        {
+            HitFeedbackManager.Instance.PlayVictimHitFeedback(transform.position);
+        }
     }
 
     private System.Collections.IEnumerator HitFeedbackCoroutine()

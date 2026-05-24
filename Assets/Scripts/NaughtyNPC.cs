@@ -2,7 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// Naughty NPC - the target. Hitting them is good!
-/// On hit: flashes green and scales up briefly.
+/// On hit: flashes green, scales up, plays hit reaction animation.
+/// Can dodge projectiles when NPCDodgeBehavior is enabled.
 /// </summary>
 public class NaughtyNPC : MonoBehaviour, INPCHitReaction
 {
@@ -14,6 +15,8 @@ public class NaughtyNPC : MonoBehaviour, INPCHitReaction
     private Renderer npcRenderer;
     private Color originalColor;
     private Vector3 originalScale;
+    private NPCAnimationController animController;
+    private NPCDodgeBehavior dodgeBehavior;
 
     private void Awake()
     {
@@ -26,6 +29,23 @@ public class NaughtyNPC : MonoBehaviour, INPCHitReaction
         // Auto-tag
         if (!gameObject.CompareTag("NaughtyNPC"))
             gameObject.tag = "NaughtyNPC";
+
+        // Get animation controller
+        animController = GetComponent<NPCAnimationController>();
+        if (animController == null)
+            animController = gameObject.AddComponent<NPCAnimationController>();
+
+        // Get dodge behavior
+        dodgeBehavior = GetComponent<NPCDodgeBehavior>();
+        if (dodgeBehavior == null)
+            dodgeBehavior = gameObject.AddComponent<NPCDodgeBehavior>();
+    }
+
+    private void Start()
+    {
+        // Dodge is disabled by default (unlocked at Level 7)
+        if (dodgeBehavior != null)
+            dodgeBehavior.IsEnabled = false;
     }
 
     public void OnHit()
@@ -33,6 +53,28 @@ public class NaughtyNPC : MonoBehaviour, INPCHitReaction
         Debug.Log("NaughtyNPC hit! (Guilty - GOOD!)");
         StopAllCoroutines();
         StartCoroutine(HitFeedbackCoroutine());
+
+        // Play hit reaction animation
+        if (animController != null)
+        {
+            // Assume hit from forward direction
+            animController.PlayHitReaction(-transform.forward);
+        }
+
+        // Trigger hit feedback
+        if (HitFeedbackManager.Instance != null)
+        {
+            HitFeedbackManager.Instance.PlayNaughtyHitFeedback(transform.position);
+        }
+    }
+
+    /// <summary>
+    /// Enable or disable dodge behavior.
+    /// </summary>
+    public void SetDodgeEnabled(bool enabled)
+    {
+        if (dodgeBehavior != null)
+            dodgeBehavior.IsEnabled = enabled;
     }
 
     private System.Collections.IEnumerator HitFeedbackCoroutine()

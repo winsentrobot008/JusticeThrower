@@ -1,16 +1,18 @@
 using UnityEngine;
 
 /// <summary>
-/// MVP scene setup script (Stage 2).
+/// MVP scene setup script (Stage 3).
 /// Attach to an empty GameObject in the scene.
 /// Generates the entire Level 1 Subway scene at runtime:
 /// - Subway car (floor, ceiling, walls, seats, handrails)
 /// - First-person camera (fixed, no movement)
-/// - VictimNPC and NaughtyNPC
+/// - VictimNPC and NaughtyNPC with animation controllers
 /// - PlayerThrow controller with skill system
 /// - SkillManager, SpinThrow, ArcThrow
-/// - LevelManager and UIManager
-/// - All throwable items (Slipper, Throwing Knife, Energy Orb)
+/// - LevelManager and UIManager with victim tracking
+/// - All throwable items (Slipper, Throwing Knife, Energy Orb, Water Balloon)
+/// - HitFeedbackManager for screen shake/flash
+/// - BounceSoundFX for audio feedback
 /// </summary>
 public class MVP_SceneSetup : MonoBehaviour
 {
@@ -33,7 +35,7 @@ public class MVP_SceneSetup : MonoBehaviour
     [SerializeField] private Color naughtyColor = Color.red;
 
     [Header("Level Settings")]
-    [SerializeField] private int startLevel = 2; // Stage 2: Spin Throw unlocked
+    [SerializeField] private int startLevel = 5; // Stage 3: Water Balloon unlocked
 
     [ContextMenu("Generate MVP Scene")]
     public void GenerateScene()
@@ -49,16 +51,17 @@ public class MVP_SceneSetup : MonoBehaviour
         // 2. Create first-person camera (fixed)
         GameObject cameraGO = CreateFirstPersonCamera(container);
 
-        // 3. Create NPCs
+        // 3. Create NPCs with animation controllers
         CreateNPCs(container);
 
         // 4. Create throwable item prefabs
         GameObject slipperPrefab = CreateItemPrefab(container, "Slipper", PrimitiveType.Cube, typeof(SlipperItem));
         GameObject knifePrefab = CreateItemPrefab(container, "Throwing Knife", PrimitiveType.Cube, typeof(ThrowingKnifeItem));
         GameObject orbPrefab = CreateItemPrefab(container, "Energy Orb", PrimitiveType.Sphere, typeof(EnergyOrbItem));
+        GameObject balloonPrefab = CreateItemPrefab(container, "Water Balloon", PrimitiveType.Sphere, typeof(WaterBalloonItem));
 
         // 5. Create SkillManager
-        SkillManager skillManager = CreateSkillManager(container, slipperPrefab, knifePrefab, orbPrefab);
+        SkillManager skillManager = CreateSkillManager(container, slipperPrefab, knifePrefab, orbPrefab, balloonPrefab);
 
         // 6. Setup PlayerThrow with skills on camera
         SetupPlayerThrow(cameraGO, skillManager);
@@ -69,7 +72,10 @@ public class MVP_SceneSetup : MonoBehaviour
         // 8. Create UIManager
         CreateUIManager();
 
-        Debug.Log($"MVP Scene (Stage 2) generated! Level {startLevel} - Skills and items unlocked.");
+        // 9. Add HitFeedbackManager to camera
+        cameraGO.AddComponent<HitFeedbackManager>();
+
+        Debug.Log($"MVP Scene (Stage 3) generated! Level {startLevel} - Skills and items unlocked.");
     }
 
     private void BuildSubwayCar(GameObject container)
@@ -141,11 +147,13 @@ public class MVP_SceneSetup : MonoBehaviour
         Vector3 victimPos = new Vector3(-0.8f, 0f, 0f);
         GameObject victim = CreateCapsuleNPC(container, "VictimNPC", victimPos, victimColor);
         victim.AddComponent<VictimNPC>();
+        victim.AddComponent<NPCAnimationController>();
 
         // NaughtyNPC - placed behind the victim (cannot be hit directly, needs bounce)
         Vector3 naughtyPos = new Vector3(0.8f, 0f, 3f);
         GameObject naughty = CreateCapsuleNPC(container, "NaughtyNPC", naughtyPos, naughtyColor);
         naughty.AddComponent<NaughtyNPC>();
+        naughty.AddComponent<NPCAnimationController>();
     }
 
     private GameObject CreateCapsuleNPC(GameObject container, string name, Vector3 position, Color color)
@@ -183,24 +191,19 @@ public class MVP_SceneSetup : MonoBehaviour
         if (defaultCol != null)
             DestroyImmediate(defaultCol);
 
-        // Remove default renderer (ThrowableItem will set up its own)
-        // Actually keep it, ThrowableItem will configure it
-
         // Add the ThrowableItem component
         item.AddComponent(itemType);
 
         return item;
     }
 
-    private SkillManager CreateSkillManager(GameObject container, GameObject slipperPrefab, GameObject knifePrefab, GameObject orbPrefab)
+    private SkillManager CreateSkillManager(GameObject container, GameObject slipperPrefab, GameObject knifePrefab, GameObject orbPrefab, GameObject balloonPrefab)
     {
         GameObject smGO = new GameObject("SkillManager");
         smGO.transform.SetParent(container.transform, false);
         SkillManager sm = smGO.AddComponent<SkillManager>();
 
-        // Use reflection to add throwable items to the SkillManager
-        // Since SkillManager's throwableItems is a SerializeField list, we need to populate it
-        // We'll use a helper approach: set the level and let the SkillManager handle unlocks
+        // Set the level to unlock appropriate skills and items
         sm.SetLevel(startLevel);
 
         return sm;

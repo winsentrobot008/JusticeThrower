@@ -102,15 +102,15 @@ JusticeThrower/
 │   │   └── Level1_Subway.unity
 │   ├── Scripts/
 │   │   ├── Stage 1 (MVP):
-│   │   │   ├── MVP_SceneSetup.cs       # Procedural subway car generator
+│   │   │   ├── MVP_SceneSetup.cs       # Procedural subway car generator (Stage 3)
 │   │   │   ├── PlayerThrow.cs          # Player input & throw logic (Stage 2 enhanced)
-│   │   │   ├── BouncePhysics.cs        # Projectile bounce physics (Vector3.Reflect)
+│   │   │   ├── BouncePhysics.cs        # Projectile bounce physics + LevelManager notify
 │   │   │   ├── SlipperPrefab.cs        # Slipper visual setup (legacy)
-│   │   │   ├── VictimNPC.cs            # Innocent NPC behavior
-│   │   │   ├── NaughtyNPC.cs           # Guilty NPC behavior
+│   │   │   ├── VictimNPC.cs            # Innocent NPC + animation controller
+│   │   │   ├── NaughtyNPC.cs           # Guilty NPC + dodge behavior + animation
 │   │   │   ├── INPCHitReaction.cs      # NPC hit reaction interface
-│   │   │   ├── LevelManager.cs         # Level completion logic
-│   │   │   └── UIManager.cs            # Crosshair, cooldown bar, level complete
+│   │   │   ├── LevelManager.cs         # Level completion + victim tracking (3 = game over)
+│   │   │   └── UIManager.cs            # Crosshair, cooldown, victim count, level/game over
 │   │   ├── Stage 2 (Spin Throw):
 │   │   │   ├── ThrowableItem.cs        # Base class for all throwable items
 │   │   │   ├── SlipperItem.cs          # Slipper (light, good bounce)
@@ -119,6 +119,12 @@ JusticeThrower/
 │   │   │   ├── SkillManager.cs         # Skill & item unlock system (7 levels)
 │   │   │   ├── SpinThrow.cs            # Spin throw skill (mouse X → spin)
 │   │   │   └── ArcThrow.cs             # Arc throw skill (hold → charge → arc)
+│   │   ├── Stage 3 (NPC + Items):
+│   │   │   ├── WaterBalloonItem.cs     # Water Balloon (AoE splash, Level 5)
+│   │   │   ├── NPCAnimationController.cs # Idle sway, hit reaction, dodge animation
+│   │   │   ├── NPCDodgeBehavior.cs     # AI dodge detection (Level 7)
+│   │   │   ├── HitFeedbackManager.cs   # Screen shake, flash, hit marker
+│   │   │   └── BounceSoundFX.cs        # Bounce & hit sound effects
 │   │   └── (Legacy / WIP):
 │   │       ├── ThrowController.cs      # (legacy)
 │   │       ├── ThrowableProjectile.cs  # (legacy)
@@ -212,13 +218,19 @@ cd JusticeThrower
 - [x] **Spin Throw physics (mouse X → spin → curved bounce)**
 - [x] **Arc Throw physics (hold → charge → arc trajectory)**
 - [x] **SkillManager with 7-level progression**
+- [x] **Stage 3: NPC Animation + Water Balloon + Hit Feedback**
+- [x] **Water Balloon (Splash Attack, Level 5) — AoE splash damage**
+- [x] **NPCAnimationController — idle sway, hit reaction, dodge animation**
+- [x] **NPCDodgeBehavior — AI dodge detection (Level 7)**
+- [x] **HitFeedbackManager — screen shake, flash, hit marker**
+- [x] **BounceSoundFX — bounce & hit sound effects**
+- [x] **LevelManager — victim hit tracking (3 = game over)**
+- [x] **UIManager — victim hit count, game over panel**
 - [ ] Score system & UI (TMPro)
-- [ ] Water Balloon (Splash Attack, Level 5)
 - [ ] Bounce Ball (multi-bounce, Level 7)
-- [ ] NPC animations (idle, hit reactions, dodge)
 - [ ] Multiple subway car levels
 - [ ] AI appearance system (photo → 3D head)
-- [ ] Sound effects & ambient subway audio
+- [ ] Sound effects & ambient subway audio (real audio clips)
 - [ ] Visual polish (VFX, lighting, post-processing)
 - [ ] Android build & deployment
 
