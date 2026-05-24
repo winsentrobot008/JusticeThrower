@@ -2,7 +2,9 @@
 
 > *"In a world full of creeps, be the justice."*
 
-**JusticeThrower** is a first-person fixed-perspective physics-based game built with **Unity 2022 LTS + URP**. You are a silent vigilante riding the subway, armed with nothing but your aim and a pocket full of projectiles. Your mission: hit the shady characters, spare the innocent — and make every throw count.
+**JusticeThrower** is a first-person fixed-perspective **realistic physics throwing puzzle game** built with **Unity 2022 LTS + URP**. You play as a "Justice Thrower" — a silent vigilante riding the subway, bus, and other tight spaces. Your mission: use **bounce shots, spin throws, and curved trajectories** to punish the "perpetrators" hiding behind innocent victims.
+
+You cannot move. You must rely on **physics mastery + skill progression** to clear each level.
 
 ---
 
@@ -14,26 +16,54 @@ You are **JusticeThrower**. No mask. No cape. Just a steady hand and a moral com
 
 ---
 
-## 🎮 Gameplay
+## 🎮 Core Gameplay
 
-### Core Mechanic
-- **First-person fixed view** — you sit at one end of the subway car and look down the aisle.
-- **Aim and throw** projectiles at NPCs using the mouse.
-- **Straight-line trajectory** with **one bounce** off walls/seats for trick shots.
-- Each level is a subway car with a mix of **Victims** (green — innocent) and **Perpetrators** (red — guilty).
+### Fixed View, No Movement
+- You stand at one end of the subway car — **you cannot move**.
+- Victory depends entirely on:
+  - **Throwing angle**
+  - **Throwing force**
+  - **Physics technique** (bounce, spin, arc)
 
-### Scoring
-| Action | Score |
-|--------|-------|
-| Hit a Perpetrator | +100 |
-| Hit a Victim | -200 |
-| Miss (projectile expires) | -10 |
-| Bounce shot (hit after bounce) | +50 bonus |
+### Realistic FPS Graphics (Unity URP)
+- Real-time lighting & shadows
+- Realistic materials & textures
+- Immersive first-person subway car environment
 
-### Game Over Conditions
-- Hitting **3 Victims** → Game Over (you've become the menace)
-- Running out of projectiles → Game Over
-- Time runs out per car → Move to next car (or fail)
+### Real Physics (Billiard-Style Bounce)
+Projectiles follow real physics:
+- **Angle of incidence = Angle of reflection**
+- **Spin affects bounce angle**
+- **Arc throws** can clear obstacles
+- **Multi-bounce** to hit tricky targets
+
+---
+
+## 📈 Skill Progression System
+
+The protagonist learns new skills in each level:
+
+| Level | New Skill | Description |
+|-------|-----------|-------------|
+| 1 | Basic Bounce | Single bounce to hit target |
+| 2 | Spin Throw | Change bounce angle with spin |
+| 3 | Arc Throw | Over/under throw to clear obstacles |
+| 4 | Sharp Angle Bounce | Throwing knife with sharper rebounds |
+| 5 | Splash Attack | Water balloon with AoE splash damage |
+| 6 | Predictive Throw | Lead moving targets |
+| 7 | AI Dodge Counter | Enemies dodge projectiles |
+
+---
+
+## 🧰 Throwable Items
+
+| Item | Trait | Use Case |
+|------|-------|----------|
+| Slipper | Light, good bounce | Early levels |
+| Water Balloon | Splash AoE | Mid levels |
+| Throwing Knife | Fast, strong spin | Skill levels |
+| Energy Orb | Strong arc, chargeable | Advanced levels |
+| Bounce Ball | Multi-bounce | Ultimate levels |
 
 ---
 
@@ -43,8 +73,19 @@ You are **JusticeThrower**. No mask. No cape. Just a steady hand and a moral com
 - **Environment**: A single subway car carriage (~20m × 3.5m × 2.8m)
 - **Seating**: Bench seats along both walls
 - **Lighting**: Fluorescent overhead lights (URP real-time)
-- **NPCs**: 3 Victims + 2 Perpetrators (placeholder capsules)
+- **NPCs**: 3 Victims (green) + 2 Perpetrators (red) — placeholder capsules
 - **Player spawn**: At one end of the car, fixed camera facing down the aisle
+- **Skill taught**: Basic Bounce
+
+---
+
+## 🤖 AI Appearance System (Future Version)
+
+Players can upload photos (front + side) of friends. AI will automatically:
+- Generate 3D head models
+- Generate textures (skin, hair, eyes)
+- Auto-rig bones
+- Replace NPC appearances in-game
 
 ---
 
@@ -91,7 +132,9 @@ JusticeThrower/
 | Engine | Unity 2022.3.52f1 (LTS) |
 | Render Pipeline | Universal Render Pipeline (URP) 14.0.11 |
 | Language | C# 9.0 |
-| Physics | Unity Physics (3D) |
+| Physics | Unity Physics (3D) — billiard-style |
+| Platform | Android (Phase 1) |
+| AI Factory | Cline (local) + Fleet (cloud) |
 | Version Control | Git + GitHub |
 
 ---
@@ -139,11 +182,22 @@ cd JusticeThrower
 - [x] Basic throw mechanic (straight + 1 bounce)
 - [x] Victim & Perpetrator placeholder NPCs
 - [ ] Score system & UI (TMPro)
-- [ ] NPC animations (idle, hit reactions)
+- [ ] Skill progression system (7 levels)
+- [ ] Throwable items (slipper, water balloon, knife, orb, bounce ball)
+- [ ] Spin throw & arc throw physics
+- [ ] NPC animations (idle, hit reactions, dodge)
 - [ ] Multiple subway car levels
-- [ ] Power-ups (piercing shot, multi-bounce, slow-mo)
+- [ ] AI appearance system (photo → 3D head)
 - [ ] Sound effects & ambient subway audio
 - [ ] Visual polish (VFX, lighting, post-processing)
+- [ ] Android build & deployment
+
+---
+
+## 🏗️ AI Factory Architecture
+
+- **Cline (Local)**: Generates Unity project, scripts, scenes, builds APK
+- **Fleet (Cloud)**: Auto-build, auto-test, auto-deploy
 
 ---
 
