@@ -2,9 +2,12 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Manages basic UI for MVP:
+/// Manages UI for Stage 2:
 /// - Crosshair (simple十字)
 /// - Cooldown bar (Image fill)
+/// - Item name display
+/// - Active skill display
+/// - Level complete panel
 /// </summary>
 public class UIManager : MonoBehaviour
 {
@@ -18,11 +21,16 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Color cooldownReadyColor = Color.green;
     [SerializeField] private Color cooldownActiveColor = Color.red;
 
+    [Header("Item Info")]
+    [SerializeField] private Text itemNameText;
+    [SerializeField] private Text skillNameText;
+
     [Header("Level Complete")]
     [SerializeField] private GameObject levelCompletePanel;
     [SerializeField] private Text levelCompleteText;
 
     private PlayerThrow playerThrow;
+    private Canvas canvas;
 
     private void Awake()
     {
@@ -34,20 +42,21 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        CreateCrosshair();
+        CreateUI();
     }
 
     private void Update()
     {
         UpdateCooldownBar();
+        UpdateItemInfo();
     }
 
-    private void CreateCrosshair()
+    private void CreateUI()
     {
         if (crosshair != null) return;
 
         // Create a canvas if none exists
-        Canvas canvas = FindObjectOfType<Canvas>();
+        canvas = FindObjectOfType<Canvas>();
         if (canvas == null)
         {
             GameObject canvasGO = new GameObject("UI_Canvas");
@@ -57,6 +66,14 @@ public class UIManager : MonoBehaviour
             canvasGO.AddComponent<GraphicRaycaster>();
         }
 
+        CreateCrosshairUI();
+        CreateCooldownBar();
+        CreateItemInfoText();
+        CreateLevelCompletePanel();
+    }
+
+    private void CreateCrosshairUI()
+    {
         // Create crosshair container
         GameObject crosshairGO = new GameObject("Crosshair");
         crosshairGO.transform.SetParent(canvas.transform, false);
@@ -81,53 +98,6 @@ public class UIManager : MonoBehaviour
         dotRect.anchorMax = new Vector2(0.5f, 0.5f);
         dotRect.sizeDelta = new Vector2(4, 4);
         dotRect.anchoredPosition = Vector2.zero;
-
-        // Create cooldown bar if not assigned
-        if (cooldownBar == null)
-        {
-            GameObject barGO = new GameObject("CooldownBar");
-            barGO.transform.SetParent(canvas.transform, false);
-            cooldownBar = barGO.AddComponent<Image>();
-            cooldownBar.color = cooldownReadyColor;
-            RectTransform barRect = barGO.GetComponent<RectTransform>();
-            barRect.anchorMin = new Vector2(0.5f, 0);
-            barRect.anchorMax = new Vector2(0.5f, 0);
-            barRect.sizeDelta = new Vector2(100, 10);
-            barRect.anchoredPosition = new Vector2(0, 30);
-            cooldownBar.type = Image.Type.Filled;
-            cooldownBar.fillMethod = Image.FillMethod.Horizontal;
-            cooldownBar.fillAmount = 1f;
-        }
-
-        // Create level complete panel if not assigned
-        if (levelCompletePanel == null)
-        {
-            levelCompletePanel = new GameObject("LevelCompletePanel");
-            levelCompletePanel.transform.SetParent(canvas.transform, false);
-            RectTransform panelRect = levelCompletePanel.AddComponent<RectTransform>();
-            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRect.sizeDelta = new Vector2(300, 100);
-            panelRect.anchoredPosition = Vector2.zero;
-
-            Image panelImage = levelCompletePanel.AddComponent<Image>();
-            panelImage.color = new Color(0, 0, 0, 0.7f);
-
-            GameObject textGO = new GameObject("Text");
-            textGO.transform.SetParent(levelCompletePanel.transform, false);
-            levelCompleteText = textGO.AddComponent<Text>();
-            levelCompleteText.text = "Level Complete!";
-            levelCompleteText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            levelCompleteText.fontSize = 24;
-            levelCompleteText.alignment = TextAnchor.MiddleCenter;
-            levelCompleteText.color = Color.green;
-            RectTransform textRect = textGO.GetComponent<RectTransform>();
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.sizeDelta = Vector2.zero;
-
-            levelCompletePanel.SetActive(false);
-        }
     }
 
     private void CreateCrosshairLine(RectTransform parent, string name, Vector2 position, Vector2 size)
@@ -143,6 +113,94 @@ public class UIManager : MonoBehaviour
         lineRect.anchoredPosition = position;
     }
 
+    private void CreateCooldownBar()
+    {
+        if (cooldownBar != null) return;
+
+        GameObject barGO = new GameObject("CooldownBar");
+        barGO.transform.SetParent(canvas.transform, false);
+        cooldownBar = barGO.AddComponent<Image>();
+        cooldownBar.color = cooldownReadyColor;
+        RectTransform barRect = barGO.GetComponent<RectTransform>();
+        barRect.anchorMin = new Vector2(0.5f, 0);
+        barRect.anchorMax = new Vector2(0.5f, 0);
+        barRect.sizeDelta = new Vector2(100, 10);
+        barRect.anchoredPosition = new Vector2(0, 30);
+        cooldownBar.type = Image.Type.Filled;
+        cooldownBar.fillMethod = Image.FillMethod.Horizontal;
+        cooldownBar.fillAmount = 1f;
+    }
+
+    private void CreateItemInfoText()
+    {
+        // Item name text (bottom-left)
+        if (itemNameText == null)
+        {
+            GameObject itemGO = new GameObject("ItemNameText");
+            itemGO.transform.SetParent(canvas.transform, false);
+            itemNameText = itemGO.AddComponent<Text>();
+            itemNameText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            itemNameText.fontSize = 16;
+            itemNameText.alignment = TextAnchor.LowerLeft;
+            itemNameText.color = Color.white;
+            itemNameText.text = "Item: Slipper";
+            RectTransform itemRect = itemGO.GetComponent<RectTransform>();
+            itemRect.anchorMin = new Vector2(0, 0);
+            itemRect.anchorMax = new Vector2(0, 0);
+            itemRect.sizeDelta = new Vector2(200, 30);
+            itemRect.anchoredPosition = new Vector2(10, 10);
+        }
+
+        // Skill name text (bottom-center, above cooldown bar)
+        if (skillNameText == null)
+        {
+            GameObject skillGO = new GameObject("SkillNameText");
+            skillGO.transform.SetParent(canvas.transform, false);
+            skillNameText = skillGO.AddComponent<Text>();
+            skillNameText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            skillNameText.fontSize = 14;
+            skillNameText.alignment = TextAnchor.LowerCenter;
+            skillNameText.color = new Color(0.5f, 0.8f, 1f);
+            skillNameText.text = "Skill: Basic Bounce";
+            RectTransform skillRect = skillGO.GetComponent<RectTransform>();
+            skillRect.anchorMin = new Vector2(0.5f, 0);
+            skillRect.anchorMax = new Vector2(0.5f, 0);
+            skillRect.sizeDelta = new Vector2(200, 20);
+            skillRect.anchoredPosition = new Vector2(0, 50);
+        }
+    }
+
+    private void CreateLevelCompletePanel()
+    {
+        if (levelCompletePanel != null) return;
+
+        levelCompletePanel = new GameObject("LevelCompletePanel");
+        levelCompletePanel.transform.SetParent(canvas.transform, false);
+        RectTransform panelRect = levelCompletePanel.AddComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRect.sizeDelta = new Vector2(300, 100);
+        panelRect.anchoredPosition = Vector2.zero;
+
+        Image panelImage = levelCompletePanel.AddComponent<Image>();
+        panelImage.color = new Color(0, 0, 0, 0.7f);
+
+        GameObject textGO = new GameObject("Text");
+        textGO.transform.SetParent(levelCompletePanel.transform, false);
+        levelCompleteText = textGO.AddComponent<Text>();
+        levelCompleteText.text = "Level Complete!";
+        levelCompleteText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        levelCompleteText.fontSize = 24;
+        levelCompleteText.alignment = TextAnchor.MiddleCenter;
+        levelCompleteText.color = Color.green;
+        RectTransform textRect = textGO.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.sizeDelta = Vector2.zero;
+
+        levelCompletePanel.SetActive(false);
+    }
+
     private void UpdateCooldownBar()
     {
         if (cooldownBar == null || playerThrow == null) return;
@@ -156,6 +214,29 @@ public class UIManager : MonoBehaviour
         {
             cooldownBar.fillAmount = 1f;
             cooldownBar.color = cooldownReadyColor;
+        }
+    }
+
+    private void UpdateItemInfo()
+    {
+        if (playerThrow == null) return;
+
+        // Update item name
+        if (itemNameText != null)
+        {
+            itemNameText.text = $"Item: {playerThrow.CurrentItemName} (Q/E)";
+        }
+
+        // Update skill name
+        if (skillNameText != null)
+        {
+            string skill = "Basic Bounce";
+            if (playerThrow.IsSpinActive)
+                skill = "Spin Throw";
+            else if (playerThrow.IsArcActive)
+                skill = "Arc Throw";
+
+            skillNameText.text = $"Skill: {skill} [1/2/3]";
         }
     }
 

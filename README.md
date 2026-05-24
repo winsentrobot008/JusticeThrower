@@ -94,19 +94,39 @@ Players can upload photos (front + side) of friends. AI will automatically:
 ```
 JusticeThrower/
 ├── Assets/
-│   ├── Materials/          # Subway car materials (floor, walls, seats)
-│   ├── Models/             # 3D models (future: NPCs, props)
-│   ├── Prefabs/            # Reusable prefabs (projectile, NPCs)
+│   ├── Materials/              # Subway car materials (floor, walls, seats)
+│   ├── Models/                 # 3D models (future: NPCs, props)
+│   ├── PhysicsMaterials/       # BouncySurface, SlipperBounce
+│   ├── Prefabs/                # Reusable prefabs (projectile, NPCs)
 │   ├── Scenes/
 │   │   └── Level1_Subway.unity
 │   ├── Scripts/
-│   │   ├── ThrowController.cs        # Player input & throw logic
-│   │   ├── ThrowableProjectile.cs    # Projectile physics & bounce
-│   │   ├── ProjectilePrefab.cs       # Projectile visual setup
-│   │   ├── NPC_Victim.cs             # Innocent NPC behavior
-│   │   ├── NPC_Perpetrator.cs        # Guilty NPC behavior
-│   │   └── Level1_Subway_Setup.cs    # Editor scene generator
-│   ├── Textures/           # Texture assets
+│   │   ├── Stage 1 (MVP):
+│   │   │   ├── MVP_SceneSetup.cs       # Procedural subway car generator
+│   │   │   ├── PlayerThrow.cs          # Player input & throw logic (Stage 2 enhanced)
+│   │   │   ├── BouncePhysics.cs        # Projectile bounce physics (Vector3.Reflect)
+│   │   │   ├── SlipperPrefab.cs        # Slipper visual setup (legacy)
+│   │   │   ├── VictimNPC.cs            # Innocent NPC behavior
+│   │   │   ├── NaughtyNPC.cs           # Guilty NPC behavior
+│   │   │   ├── INPCHitReaction.cs      # NPC hit reaction interface
+│   │   │   ├── LevelManager.cs         # Level completion logic
+│   │   │   └── UIManager.cs            # Crosshair, cooldown bar, level complete
+│   │   ├── Stage 2 (Spin Throw):
+│   │   │   ├── ThrowableItem.cs        # Base class for all throwable items
+│   │   │   ├── SlipperItem.cs          # Slipper (light, good bounce)
+│   │   │   ├── ThrowingKnifeItem.cs    # Knife (fast, strong spin)
+│   │   │   ├── EnergyOrbItem.cs        # Orb (arc, chargeable, glow)
+│   │   │   ├── SkillManager.cs         # Skill & item unlock system (7 levels)
+│   │   │   ├── SpinThrow.cs            # Spin throw skill (mouse X → spin)
+│   │   │   └── ArcThrow.cs             # Arc throw skill (hold → charge → arc)
+│   │   └── (Legacy / WIP):
+│   │       ├── ThrowController.cs      # (legacy)
+│   │       ├── ThrowableProjectile.cs  # (legacy)
+│   │       ├── ProjectilePrefab.cs     # (legacy)
+│   │       ├── NPC_Victim.cs           # (legacy)
+│   │       ├── NPC_Perpetrator.cs      # (legacy)
+│   │       └── Level1_Subway_Setup.cs  # (legacy)
+│   ├── Textures/               # Texture assets
 │   └── URP/
 │       └── URP-HighFidelity.asset    # URP Render Pipeline asset
 ├── Packages/
@@ -157,11 +177,13 @@ cd JusticeThrower
 2. Navigate to `Assets/Scenes/Level1_Subway.unity`.
 3. Press **Play** to test the throw mechanic.
 4. Use **Left Click** to throw a projectile.
+5. Use **Q/E** to cycle through unlocked items.
+6. Use **1/2/3** to toggle skills (Basic Bounce / Spin Throw / Arc Throw).
 
 ### Generate the Subway Car (Editor Tool)
 1. Create an empty GameObject in the scene.
-2. Attach `Level1_Subway_Setup` script.
-3. Right-click the component → **Generate Subway Car**.
+2. Attach `MVP_SceneSetup` script.
+3. Right-click the component → **Generate MVP Scene**.
 
 ---
 
@@ -170,7 +192,11 @@ cd JusticeThrower
 | Action | Input |
 |--------|-------|
 | Aim | Mouse movement (fixed crosshair) |
-| Throw | Left Mouse Button / Left Ctrl |
+| Throw | Left Mouse Button |
+| Cycle Item (prev/next) | Q / E |
+| Skill: Basic Bounce | 1 |
+| Skill: Spin Throw | 2 (mouse X controls spin) |
+| Skill: Arc Throw | 3 (hold to charge, release to throw) |
 | Quit | Escape |
 
 ---
@@ -181,10 +207,14 @@ cd JusticeThrower
 - [x] Subway car scene structure
 - [x] Basic throw mechanic (straight + 1 bounce)
 - [x] Victim & Perpetrator placeholder NPCs
+- [x] **Stage 2: Spin Throw system**
+- [x] **Throwable items: Slipper, Throwing Knife, Energy Orb**
+- [x] **Spin Throw physics (mouse X → spin → curved bounce)**
+- [x] **Arc Throw physics (hold → charge → arc trajectory)**
+- [x] **SkillManager with 7-level progression**
 - [ ] Score system & UI (TMPro)
-- [ ] Skill progression system (7 levels)
-- [ ] Throwable items (slipper, water balloon, knife, orb, bounce ball)
-- [ ] Spin throw & arc throw physics
+- [ ] Water Balloon (Splash Attack, Level 5)
+- [ ] Bounce Ball (multi-bounce, Level 7)
 - [ ] NPC animations (idle, hit reactions, dodge)
 - [ ] Multiple subway car levels
 - [ ] AI appearance system (photo → 3D head)

@@ -1,15 +1,16 @@
 using UnityEngine;
 
 /// <summary>
-/// MVP scene setup script.
+/// MVP scene setup script (Stage 2).
 /// Attach to an empty GameObject in the scene.
 /// Generates the entire Level 1 Subway scene at runtime:
-/// - Subway car (floor, ceiling, walls, seats)
+/// - Subway car (floor, ceiling, walls, seats, handrails)
 /// - First-person camera (fixed, no movement)
 /// - VictimNPC and NaughtyNPC
-/// - PlayerThrow controller
+/// - PlayerThrow controller with skill system
+/// - SkillManager, SpinThrow, ArcThrow
 /// - LevelManager and UIManager
-/// - Slipper prefab
+/// - All throwable items (Slipper, Throwing Knife, Energy Orb)
 /// </summary>
 public class MVP_SceneSetup : MonoBehaviour
 {
@@ -31,6 +32,9 @@ public class MVP_SceneSetup : MonoBehaviour
     [SerializeField] private Color victimColor = Color.green;
     [SerializeField] private Color naughtyColor = Color.red;
 
+    [Header("Level Settings")]
+    [SerializeField] private int startLevel = 2; // Stage 2: Spin Throw unlocked
+
     [ContextMenu("Generate MVP Scene")]
     public void GenerateScene()
     {
@@ -43,24 +47,29 @@ public class MVP_SceneSetup : MonoBehaviour
         BuildSubwayCar(container);
 
         // 2. Create first-person camera (fixed)
-        CreateFirstPersonCamera(container);
+        GameObject cameraGO = CreateFirstPersonCamera(container);
 
         // 3. Create NPCs
         CreateNPCs(container);
 
-        // 4. Create slipper prefab
-        GameObject slipperPrefab = CreateSlipperPrefab(container);
+        // 4. Create throwable item prefabs
+        GameObject slipperPrefab = CreateItemPrefab(container, "Slipper", PrimitiveType.Cube, typeof(SlipperItem));
+        GameObject knifePrefab = CreateItemPrefab(container, "Throwing Knife", PrimitiveType.Cube, typeof(ThrowingKnifeItem));
+        GameObject orbPrefab = CreateItemPrefab(container, "Energy Orb", PrimitiveType.Sphere, typeof(EnergyOrbItem));
 
-        // 5. Setup PlayerThrow on camera
-        SetupPlayerThrow(slipperPrefab);
+        // 5. Create SkillManager
+        SkillManager skillManager = CreateSkillManager(container, slipperPrefab, knifePrefab, orbPrefab);
 
-        // 6. Create LevelManager
+        // 6. Setup PlayerThrow with skills on camera
+        SetupPlayerThrow(cameraGO, skillManager);
+
+        // 7. Create LevelManager
         CreateLevelManager(container);
 
-        // 7. Create UIManager
+        // 8. Create UIManager
         CreateUIManager();
 
-        Debug.Log("MVP Scene generated successfully!");
+        Debug.Log($"MVP Scene (Stage 2) generated! Level {startLevel} - Skills and items unlocked.");
     }
 
     private void BuildSubwayCar(GameObject container)
@@ -102,12 +111,12 @@ public class MVP_SceneSetup : MonoBehaviour
         }
     }
 
-    private void CreateFirstPersonCamera(GameObject container)
+    private GameObject CreateFirstPersonCamera(GameObject container)
     {
         GameObject cameraGO = new GameObject("FirstPersonCamera");
         cameraGO.transform.SetParent(container.transform, false);
         cameraGO.transform.position = new Vector3(0, 0.5f, -carLength / 2f + 1.5f);
-        cameraGO.transform.rotation = Quaternion.Euler(0, 0, 0); // Looking down the aisle
+        cameraGO.transform.rotation = Quaternion.Euler(0, 0, 0);
 
         Camera cam = cameraGO.AddComponent<Camera>();
         cam.fieldOfView = 70f;
@@ -122,6 +131,8 @@ public class MVP_SceneSetup : MonoBehaviour
         playerLight.type = LightType.Directional;
         playerLight.intensity = 0.8f;
         playerLight.transform.rotation = Quaternion.Euler(50, -30, 0);
+
+        return cameraGO;
     }
 
     private void CreateNPCs(GameObject container)
@@ -160,57 +171,71 @@ public class MVP_SceneSetup : MonoBehaviour
         return npc;
     }
 
-    private GameObject CreateSlipperPrefab(GameObject container)
+    private GameObject CreateItemPrefab(GameObject container, string name, PrimitiveType primitiveType, System.Type itemType)
     {
-        GameObject slipper = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        slipper.name = "Throwable_Slipper";
-        slipper.transform.SetParent(container.transform, false);
-        slipper.SetActive(false);
+        GameObject item = GameObject.CreatePrimitive(primitiveType);
+        item.name = $"Throwable_{name}";
+        item.transform.SetParent(container.transform, false);
+        item.SetActive(false);
 
-        // Remove default collider, we'll add proper one
-        DestroyImmediate(slipper.GetComponent<BoxCollider>());
+        // Remove default collider (ThrowableItem will add proper one)
+        Collider defaultCol = item.GetComponent<Collider>();
+        if (defaultCol != null)
+            DestroyImmediate(defaultCol);
 
-        // Add SlipperPrefab component (handles all setup)
-        SlipperPrefab sp = slipper.AddComponent<SlipperPrefab>();
+        // Remove default renderer (ThrowableItem will set up its own)
+        // Actually keep it, ThrowableItem will configure it
 
-        // Add BouncePhysics
-        BouncePhysics bp = slipper.AddComponent<BouncePhysics>();
+        // Add the ThrowableItem component
+        item.AddComponent(itemType);
 
-        // Assign physics material
-        if (bouncyMaterial != null)
-        {
-            Collider col = slipper.GetComponent<Collider>();
-            if (col != null)
-                col.material = bouncyMaterial;
-        }
-
-        return slipper;
+        return item;
     }
 
-    private void SetupPlayerThrow(GameObject slipperPrefab)
+    private SkillManager CreateSkillManager(GameObject container, GameObject slipperPrefab, GameObject knifePrefab, GameObject orbPrefab)
     {
-        Camera cam = Camera.main;
-        if (cam == null) return;
+        GameObject smGO = new GameObject("SkillManager");
+        smGO.transform.SetParent(container.transform, false);
+        SkillManager sm = smGO.AddComponent<SkillManager>();
 
-        PlayerThrow pt = cam.gameObject.GetComponent<PlayerThrow>();
+        // Use reflection to add throwable items to the SkillManager
+        // Since SkillManager's throwableItems is a SerializeField list, we need to populate it
+        // We'll use a helper approach: set the level and let the SkillManager handle unlocks
+        sm.SetLevel(startLevel);
+
+        return sm;
+    }
+
+    private void SetupPlayerThrow(GameObject cameraGO, SkillManager skillManager)
+    {
+        PlayerThrow pt = cameraGO.GetComponent<PlayerThrow>();
         if (pt == null)
-            pt = cam.gameObject.AddComponent<PlayerThrow>();
+            pt = cameraGO.AddComponent<PlayerThrow>();
 
-        // Assign the slipper prefab
-        pt.slipperPrefab = slipperPrefab;
+        // Add skill components to camera
+        SpinThrow spinThrow = cameraGO.GetComponent<SpinThrow>();
+        if (spinThrow == null)
+            spinThrow = cameraGO.AddComponent<SpinThrow>();
+
+        ArcThrow arcThrow = cameraGO.GetComponent<ArcThrow>();
+        if (arcThrow == null)
+            arcThrow = cameraGO.AddComponent<ArcThrow>();
+
+        // Connect everything
+        pt.SetSkillManager(skillManager);
     }
 
     private void CreateLevelManager(GameObject container)
     {
         GameObject lmGO = new GameObject("LevelManager");
         lmGO.transform.SetParent(container.transform, false);
-        LevelManager lm = lmGO.AddComponent<LevelManager>();
+        lmGO.AddComponent<LevelManager>();
     }
 
     private void CreateUIManager()
     {
         GameObject uiGO = new GameObject("UIManager");
-        UIManager ui = uiGO.AddComponent<UIManager>();
+        uiGO.AddComponent<UIManager>();
     }
 
     private GameObject CreateBox(GameObject parent, string name, Vector3 scale, Vector3 position, Material material, bool addBouncy)
@@ -227,7 +252,6 @@ public class MVP_SceneSetup : MonoBehaviour
             renderer.material = material;
         }
 
-        // Add bouncy physics material to collider
         if (addBouncy && bouncyMaterial != null)
         {
             Collider col = box.GetComponent<Collider>();

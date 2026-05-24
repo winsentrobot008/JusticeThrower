@@ -51,11 +51,29 @@ public class BouncePhysics : MonoBehaviour
     }
 
     /// <summary>
+    /// Set max bounces (called by ThrowableItem).
+    /// </summary>
+    public void SetMaxBounces(int bounces)
+    {
+        maxBounces = bounces;
+        bouncesRemaining = maxBounces;
+    }
+
+    /// <summary>
     /// Launch the projectile with given velocity.
     /// </summary>
     public void Launch(Vector3 velocity)
     {
         rb.velocity = velocity;
+    }
+
+    /// <summary>
+    /// Launch with both velocity and angular velocity.
+    /// </summary>
+    public void Launch(Vector3 velocity, Vector3 angularVelocity)
+    {
+        rb.velocity = velocity;
+        rb.angularVelocity = angularVelocity;
     }
 
     private void OnCollisionEnter(Collision collision)
