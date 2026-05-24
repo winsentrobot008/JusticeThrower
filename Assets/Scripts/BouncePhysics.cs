@@ -141,6 +141,24 @@ public class BouncePhysics : MonoBehaviour
                 lm.OnVictimHit(npc);
         }
 
+        // Notify ScoreManager
+        if (ScoreManager.Instance != null)
+        {
+            if (npc.CompareTag("NaughtyNPC"))
+                ScoreManager.Instance.RecordNaughtyHit();
+            else if (npc.CompareTag("VictimNPC"))
+                ScoreManager.Instance.RecordVictimHit();
+        }
+
+        // Spawn hit VFX
+        if (HitVFX.Instance != null)
+        {
+            if (npc.CompareTag("NaughtyNPC"))
+                HitVFX.Instance.SpawnNaughtyHitVFX(transform.position);
+            else if (npc.CompareTag("VictimNPC"))
+                HitVFX.Instance.SpawnVictimHitVFX(transform.position);
+        }
+
         // Destroy projectile after brief delay
         Destroy(gameObject, 0.5f);
     }

@@ -67,6 +67,10 @@ public class LevelManager : MonoBehaviour
 
         Debug.Log(levelCompleteMessage);
 
+        // Calculate final score
+        if (ScoreManager.Instance != null)
+            ScoreManager.Instance.CalculateFinalScore();
+
         // Show level complete UI
         UIManager ui = FindObjectOfType<UIManager>();
         if (ui != null)

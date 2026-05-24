@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// MVP scene setup script (Stage 3).
+/// MVP scene setup script (Stage 4).
 /// Attach to an empty GameObject in the scene.
 /// Generates the entire Level 1 Subway scene at runtime:
 /// - Subway car (floor, ceiling, walls, seats, handrails)
@@ -10,9 +10,12 @@ using UnityEngine;
 /// - PlayerThrow controller with skill system
 /// - SkillManager, SpinThrow, ArcThrow
 /// - LevelManager and UIManager with victim tracking
-/// - All throwable items (Slipper, Throwing Knife, Energy Orb, Water Balloon)
+/// - All throwable items (Slipper, Throwing Knife, Energy Orb, Water Balloon, Bounce Ball)
 /// - HitFeedbackManager for screen shake/flash
 /// - BounceSoundFX for audio feedback
+/// - ScoreManager with TMPro score display
+/// - SubwayAmbientAudio for ambient sounds
+/// - HitVFX for particle effects on hit
 /// </summary>
 public class MVP_SceneSetup : MonoBehaviour
 {
@@ -35,7 +38,7 @@ public class MVP_SceneSetup : MonoBehaviour
     [SerializeField] private Color naughtyColor = Color.red;
 
     [Header("Level Settings")]
-    [SerializeField] private int startLevel = 5; // Stage 3: Water Balloon unlocked
+    [SerializeField] private int startLevel = 7; // Stage 4: All items unlocked
 
     [ContextMenu("Generate MVP Scene")]
     public void GenerateScene()
@@ -59,9 +62,10 @@ public class MVP_SceneSetup : MonoBehaviour
         GameObject knifePrefab = CreateItemPrefab(container, "Throwing Knife", PrimitiveType.Cube, typeof(ThrowingKnifeItem));
         GameObject orbPrefab = CreateItemPrefab(container, "Energy Orb", PrimitiveType.Sphere, typeof(EnergyOrbItem));
         GameObject balloonPrefab = CreateItemPrefab(container, "Water Balloon", PrimitiveType.Sphere, typeof(WaterBalloonItem));
+        GameObject bounceBallPrefab = CreateItemPrefab(container, "Bounce Ball", PrimitiveType.Sphere, typeof(BounceBallItem));
 
         // 5. Create SkillManager
-        SkillManager skillManager = CreateSkillManager(container, slipperPrefab, knifePrefab, orbPrefab, balloonPrefab);
+        SkillManager skillManager = CreateSkillManager(container, slipperPrefab, knifePrefab, orbPrefab, balloonPrefab, bounceBallPrefab);
 
         // 6. Setup PlayerThrow with skills on camera
         SetupPlayerThrow(cameraGO, skillManager);
@@ -75,7 +79,16 @@ public class MVP_SceneSetup : MonoBehaviour
         // 9. Add HitFeedbackManager to camera
         cameraGO.AddComponent<HitFeedbackManager>();
 
-        Debug.Log($"MVP Scene (Stage 3) generated! Level {startLevel} - Skills and items unlocked.");
+        // 10. Create ScoreManager
+        CreateScoreManager();
+
+        // 11. Create HitVFX
+        CreateHitVFX();
+
+        // 12. Create SubwayAmbientAudio
+        CreateSubwayAmbientAudio(container);
+
+        Debug.Log($"MVP Scene (Stage 4) generated! Level {startLevel} - All items and skills unlocked.");
     }
 
     private void BuildSubwayCar(GameObject container)
@@ -197,7 +210,7 @@ public class MVP_SceneSetup : MonoBehaviour
         return item;
     }
 
-    private SkillManager CreateSkillManager(GameObject container, GameObject slipperPrefab, GameObject knifePrefab, GameObject orbPrefab, GameObject balloonPrefab)
+    private SkillManager CreateSkillManager(GameObject container, GameObject slipperPrefab, GameObject knifePrefab, GameObject orbPrefab, GameObject balloonPrefab, GameObject bounceBallPrefab)
     {
         GameObject smGO = new GameObject("SkillManager");
         smGO.transform.SetParent(container.transform, false);
@@ -239,6 +252,25 @@ public class MVP_SceneSetup : MonoBehaviour
     {
         GameObject uiGO = new GameObject("UIManager");
         uiGO.AddComponent<UIManager>();
+    }
+
+    private void CreateScoreManager()
+    {
+        GameObject smGO = new GameObject("ScoreManager");
+        smGO.AddComponent<ScoreManager>();
+    }
+
+    private void CreateHitVFX()
+    {
+        GameObject vfxGO = new GameObject("HitVFX");
+        vfxGO.AddComponent<HitVFX>();
+    }
+
+    private void CreateSubwayAmbientAudio(GameObject container)
+    {
+        GameObject audioGO = new GameObject("SubwayAmbientAudio");
+        audioGO.transform.SetParent(container.transform, false);
+        audioGO.AddComponent<SubwayAmbientAudio>();
     }
 
     private GameObject CreateBox(GameObject parent, string name, Vector3 scale, Vector3 position, Material material, bool addBouncy)

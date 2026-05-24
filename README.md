@@ -125,6 +125,11 @@ JusticeThrower/
 │   │   │   ├── NPCDodgeBehavior.cs     # AI dodge detection (Level 7)
 │   │   │   ├── HitFeedbackManager.cs   # Screen shake, flash, hit marker
 │   │   │   └── BounceSoundFX.cs        # Bounce & hit sound effects
+│   │   ├── Stage 4 (Score + VFX + Audio):
+│   │   │   ├── BounceBallItem.cs       # Bounce Ball (multi-bounce, Level 7)
+│   │   │   ├── ScoreManager.cs         # Score tracking with TMPro (accuracy, time, score)
+│   │   │   ├── SubwayAmbientAudio.cs   # Ambient subway sounds (rumble, clatter, announcements)
+│   │   │   └── HitVFX.cs              # Particle effects on hit/bounce
 │   │   └── (Legacy / WIP):
 │   │       ├── ThrowController.cs      # (legacy)
 │   │       ├── ThrowableProjectile.cs  # (legacy)
@@ -226,8 +231,15 @@ cd JusticeThrower
 - [x] **BounceSoundFX — bounce & hit sound effects**
 - [x] **LevelManager — victim hit tracking (3 = game over)**
 - [x] **UIManager — victim hit count, game over panel**
-- [ ] Score system & UI (TMPro)
-- [ ] Bounce Ball (multi-bounce, Level 7)
+- [x] **Stage 4: Score System + Bounce Ball + Ambient Audio + VFX**
+- [x] **BounceBallItem — multi-bounce projectile (Level 7, orange glow, trail)**
+- [x] **ScoreManager — TMPro score display (accuracy, time, final score)**
+- [x] **SubwayAmbientAudio — procedural rumble, clatter, station announcements**
+- [x] **HitVFX — particle effects on Naughty/Victim/bounce hits**
+- [x] **BouncePhysics — ScoreManager + HitVFX integration**
+- [x] **LevelManager — ScoreManager.CalculateFinalScore() on level complete**
+- [x] **PlayerThrow — ScoreManager.RecordThrow() on each throw**
+- [x] **MVP_SceneSetup — BounceBall, ScoreManager, SubwayAmbientAudio, HitVFX, Level 7 start**
 - [ ] Multiple subway car levels
 - [ ] AI appearance system (photo → 3D head)
 - [ ] Sound effects & ambient subway audio (real audio clips)

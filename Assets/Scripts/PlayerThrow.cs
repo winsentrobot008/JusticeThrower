@@ -148,6 +148,10 @@ public class PlayerThrow : MonoBehaviour
             arcThrow.ApplyArc(ref velocity);
         }
 
+        // Record throw for score tracking
+        if (ScoreManager.Instance != null)
+            ScoreManager.Instance.RecordThrow();
+
         // Launch
         throwable.Launch(velocity, angularVelocity);
     }
